@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raio-X Cariacica</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+:root{
+  --ink:#0E0B08; --card:#1a1510; --paper:#F3ECDD; --yellow:#FFCC00; --orange:#F59E21; --red:#E0261C;
+  --linha:rgba(243,236,221,.14); --suave:rgba(243,236,221,.66);
+  --fh:'Montserrat Alternates',system-ui,sans-serif; --fs:'Instrument Serif',Georgia,serif; --fm:'JetBrains Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --t:max(30px,min(4.6vw,8.4vh));
+  --c:max(14px,min(1.4vw,2.8vh));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--ink)}
+body{color:var(--paper);font-family:var(--fh);font-weight:500;font-size:var(--c);line-height:1.35;overflow:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+
+/* HUD */
+.hud{position:fixed;inset:0 0 auto 0;display:flex;justify-content:space-between;align-items:center;padding:28px 6vw;z-index:5;pointer-events:none}
+.hud img{height:30px;width:auto}
+.hud .onde{font-family:var(--fm);font-weight:700;font-size:15px;letter-spacing:.06em;color:var(--suave)}
+.hud .onde b{color:var(--paper)}
+.barra{position:fixed;left:0;bottom:0;height:4px;background:var(--yellow);width:0;transition:width .6s var(--ease);z-index:5}
+.dica{position:fixed;left:6vw;bottom:16px;transition:opacity .4s;font-family:var(--fm);font-size:13px;color:rgba(243,236,221,.35);z-index:5}
+
+/* telas */
+.tela{position:fixed;inset:0;display:flex;align-items:safe center;overflow:auto;scrollbar-width:none;justify-content:center;padding:clamp(70px,13vh,104px) 6vw clamp(28px,7vh,64px);opacity:0;visibility:hidden;transition:opacity .5s var(--ease),visibility 0s linear .5s}
+.tela.on{opacity:1;visibility:visible;transition:opacity .5s var(--ease),visibility 0s}
+.miolo{width:100%;max-width:1600px;display:flex;flex-direction:column;gap:clamp(10px,2.6vh,30px);position:relative;z-index:1}
+.cai{opacity:0;transform:translateY(22px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.tela.on .cai{opacity:1;transform:none;transition-delay:calc(var(--i,0) * 90ms + 120ms)}
+.sem-anim *{transition:none !important}
+
+.etiqueta{align-self:flex-start;font-family:var(--fm);font-weight:700;font-size:max(14px,min(1.05vw,2.2vh));letter-spacing:.12em;text-transform:uppercase;color:var(--yellow);border:1.5px solid var(--yellow);border-radius:999px;padding:9px 18px}
+.titulo{font-weight:800;font-size:var(--t);line-height:1.04;letter-spacing:-.02em}
+.titulo em{font-family:var(--fs);font-style:italic;font-weight:400;font-size:1.1em;letter-spacing:0;color:var(--yellow)}
+.gigante{font-weight:900;font-size:max(40px,min(6.6vw,12.5vh))}
+.sub{color:var(--suave);max-width:46ch}
+.sub b{color:var(--paper);font-weight:700}
+
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.4vw,22px)}
+.card{background:var(--card);border:1px solid var(--linha);border-radius:18px;padding:clamp(14px,min(1.8vw,3vh),28px);display:flex;flex-direction:column;gap:10px}
+.card .n{width:38px;height:38px;border-radius:50%;background:var(--yellow);color:var(--ink);font-family:var(--fm);font-weight:700;display:grid;place-items:center;font-size:17px}
+.card .rot{font-family:var(--fm);font-weight:700;font-size:max(12px,min(.85vw,1.8vh));letter-spacing:.12em;text-transform:uppercase;color:var(--suave)}
+.card .val{font-weight:800;font-size:max(20px,min(1.75vw,3.5vh));line-height:1.15}
+.card .obs{color:var(--suave);font-size:.82em}
+.rodape{color:var(--suave);font-size:.85em}
+.rodape b{color:var(--paper)}
+
+/* capa */
+.mascote{position:absolute;right:4vw;bottom:2vh;height:min(64vh,620px);width:auto;z-index:0;opacity:0;transform:translateX(40px) rotate(6deg);transition:opacity .7s var(--ease),transform .9s var(--ease)}
+.tela.on .mascote{opacity:1;transform:none;transition-delay:.35s}
+.capa .cards{max-width:min(1180px,calc(100% - min(56vh,520px)))}
+
+/* dor */
+.num{font-family:var(--fm);font-weight:700;color:var(--yellow);font-size:max(32px,min(4.6vw,9vh));line-height:1;letter-spacing:-.02em}
+.num small{font-size:.42em;letter-spacing:0;margin-left:6px;color:var(--yellow)}
+.dor .card{gap:clamp(8px,1.6vh,14px);padding-top:clamp(16px,min(2.4vw,4vh),34px);padding-bottom:clamp(16px,min(2.4vw,4vh),34px)}
+.dor .val{font-size:max(17px,min(1.3vw,2.7vh));font-weight:700}
+
+/* ideia */
+.ideia .grade{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(18px,2.4vw,40px);align-items:stretch}
+.passos{display:flex;flex-direction:column;gap:clamp(10px,1.6vh,16px)}
+.passo{display:flex;gap:16px;align-items:center;background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:clamp(10px,min(1.4vw,2.4vh),20px) clamp(16px,1.6vw,24px)}
+.passo .n{flex:none;width:38px;height:38px;border-radius:50%;background:var(--yellow);color:var(--ink);font-family:var(--fm);font-weight:700;display:grid;place-items:center;font-size:17px}
+.passo p{font-weight:700;font-size:max(17px,min(1.3vw,2.7vh));line-height:1.25}
+.passo p span{color:var(--suave);font-weight:500}
+.mapa{background:#14100c;border:1px solid var(--linha);border-radius:18px;position:relative;overflow:hidden;min-height:180px}
+.mapa svg{position:absolute;inset:0;width:100%;height:100%}
+.mapa .leg{position:absolute;right:16px;top:12px;font-family:var(--fm);font-size:12px;color:rgba(243,236,221,.4)}
+.rota{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.6s var(--ease)}
+.tela.on .rota{stroke-dashoffset:0;transition-delay:.7s}
+.pino{opacity:0;transform-box:fill-box;transform-origin:50% 100%;transform:scale(.4);transition:opacity .35s var(--ease),transform .45s cubic-bezier(.3,1.5,.5,1)}
+.tela.on .pino{opacity:1;transform:none;transition-delay:calc(var(--i) * 260ms + .9s)}
+.teste{display:flex;gap:18px;align-items:center;background:var(--yellow);color:var(--ink);border-radius:18px;padding:clamp(12px,min(1.6vw,2.6vh),24px) clamp(18px,2vw,30px)}
+.teste .rot{font-family:var(--fm);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;flex:none;border:1.5px solid var(--ink);border-radius:999px;padding:6px 12px}
+.teste p{font-weight:700;font-size:max(17px,min(1.3vw,2.7vh));line-height:1.25}
+.selo-ok{display:inline-flex;gap:8px;align-items:center;font-family:var(--fm);font-size:.78em;color:var(--suave)}
+.selo-ok i{width:9px;height:9px;border-radius:50%;background:#3ccf6e;display:inline-block}
+
+/* janela baixa */
+@media (max-height:760px){ .mascote{height:56vh} .tela{padding-top:84px} }
+/* celular */
+@media (max-width:820px){
+  body{overflow:auto}
+  .hud{padding:18px 16px;background:linear-gradient(var(--ink) 70%,transparent)}
+  .hud img{height:24px}
+  .tela{position:relative;inset:auto;min-height:100svh;opacity:1;visibility:visible;padding:84px 16px 48px;align-items:flex-start;display:none}
+  .tela.on{display:flex}
+  .cards,.ideia .grade{grid-template-columns:1fr}
+  .capa .cards{max-width:none}
+  .mascote{position:relative;right:auto;bottom:auto;height:220px;align-self:flex-end;margin-top:-10px}
+  .mapa{height:260px}
+  .teste{flex-direction:column;align-items:flex-start}
+  .dica{display:none}
+}
+</style>
+</head>
+<body>
+<header class="hud">
+  <img src="assets/img/logo-branco.webp" alt="Tastefy">
+  <div class="onde"><b id="idx">01</b> / 03 · <span id="nome">Capa</span></div>
+</header>
+
+<!-- 1. CAPA: modelo, loja e visita -->
+<section class="tela capa on" data-nome="Capa">
+  <div class="miolo">
+    <span class="etiqueta cai" style="--i:0">Desafio Raio-X da Loja · 06/11</span>
+    <h1 class="titulo gigante cai" style="--i:1">Raio-X da <em>NFB Cariacica</em></h1>
+    <p class="sub cai" style="--i:2">Dupla: <b>Gonçalves e Julia</b></p>
+    <div class="cards">
+      <div class="card cai" style="--i:3"><span class="n">1</span><span class="rot">Modelo e loja</span><span class="val">Entrega com motoboy da própria loja, na NFB Cariacica</span></div>
+      <div class="card cai" style="--i:4"><span class="n">2</span><span class="rot">Visita</span><span class="val">Quinta, 12/11, no almoço</span><span class="obs">Data proposta, confirmando com a loja</span></div>
+      <div class="card cai" style="--i:5"><span class="n">3</span><span class="rot">Apresentação final</span><span class="val">Terça, 17/11</span><span class="obs">Com o antes e depois medido na loja</span></div>
+    </div>
+  </div>
+  <img class="mascote" src="assets/img/taste-talheres.webp" alt="">
+</section>
+
+<!-- 2. A DOR -->
+<section class="tela dor" data-nome="A dor">
+  <div class="miolo">
+    <span class="etiqueta cai" style="--i:0">A dor · dados do One, 30 dias até 04/11</span>
+    <h2 class="titulo cai" style="--i:1">O gerente monta a rota <em>na mão</em></h2>
+    <p class="sub cai" style="--i:2">Ele separa <b>comanda por comanda</b> para decidir qual pedido vai com qual motoboy, e em que ordem.</p>
+    <div class="cards">
+      <div class="card cai" style="--i:3"><span class="num">21,9<small>min</small></span><span class="val">do pedido entrar até sair para entrega</span><span class="obs">Mediana dos pedidos da loja</span></div>
+      <div class="card cai" style="--i:4"><span class="num">56<small>de 96</small></span><span class="val">cancelamentos foram por atraso</span><span class="obs">36 deles numa semana só, de 19 a 25/10</span></div>
+      <div class="card cai" style="--i:5"><span class="num">3<small>%</small></span><span class="val">dos pedidos têm o "pronto" marcado</span><span class="obs">Hoje não dá para saber se o atraso é da cozinha ou da espera do motoboy</span></div>
+    </div>
+    <p class="rodape cai" style="--i:6">A visita ainda não aconteceu: a dor vem dos dados e vai ser <b>confirmada na loja</b>.</p>
+  </div>
+</section>
+
+<!-- 3. IDEIA E TESTE -->
+<section class="tela ideia" data-nome="Ideia e teste">
+  <div class="miolo">
+    <span class="etiqueta cai" style="--i:0">A ideia e como testar</span>
+    <h2 class="titulo cai" style="--i:1">Despachar junto, <em>na melhor ordem</em></h2>
+    <div class="grade">
+      <div class="passos">
+        <div class="passo cai" style="--i:2"><span class="n">1</span><p>O gerente marca os pedidos <span>no mapa da Torre do One</span></p></div>
+        <div class="passo cai" style="--i:3"><span class="n">2</span><p>Aperta "Despachar juntos" <span>e o One calcula a ordem pelas ruas</span></p></div>
+        <div class="passo cai" style="--i:4"><span class="n">3</span><p>O app do motoboy recebe as paradas <span>já na ordem 1, 2 e 3</span></p></div>
+        <span class="selo-ok cai" style="--i:5"><i></i>Despacho em lote ensaiado no sistema em 06/11</span>
+      </div>
+      <div class="mapa cai" style="--i:3">
+        <svg viewBox="0 0 600 380" preserveAspectRatio="xMidYMid meet" style="overflow:visible" aria-hidden="true">
+          <g stroke="rgba(243,236,221,.07)" stroke-width="14" fill="none" stroke-linecap="round">
+            <path d="M-400 90 H1000 M-400 200 H1000 M-400 310 H1000 M-40 -200 V600 M110 -200 V600 M260 -200 V600 M410 -200 V600 M540 -200 V600 M670 -200 V600"/>
+            <path d="M-120 480 L250 40 M300 560 L760 20" stroke-width="10"/>
+          </g>
+          <path class="rota" pathLength="1" d="M110 310 H260 V200 H410 V90 H540" fill="none" stroke="#FFCC00" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+          <g class="pino" style="--i:0"><circle cx="110" cy="310" r="22" fill="#F3ECDD"/><text x="110" y="317" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="17" fill="#0E0B08">LOJA</text></g>
+          <g class="pino" style="--i:1"><circle cx="260" cy="200" r="19" fill="#FFCC00"/><text x="260" y="207" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="19" fill="#0E0B08">1</text></g>
+          <g class="pino" style="--i:2"><circle cx="410" cy="90" r="19" fill="#FFCC00"/><text x="410" y="97" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="19" fill="#0E0B08">2</text></g>
+          <g class="pino" style="--i:3"><circle cx="540" cy="90" r="19" fill="#FFCC00"/><text x="540" y="97" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="19" fill="#0E0B08">3</text></g>
+        </svg>
+        <span class="leg">ilustração</span>
+      </div>
+    </div>
+    <div class="teste cai" style="--i:6"><span class="rot">Teste</span><p>Num turno real em Cariacica, medir o tempo entre o pedido entrar e sair para entrega, antes e depois.</p></div>
+  </div>
+</section>
+
+<div class="barra" id="barra"></div>
+<div class="dica">← → para navegar</div>
+
+<script>
+(() => {
+  const telas = [...document.querySelectorAll('.tela')];
+  const idx = document.getElementById('idx'), nome = document.getElementById('nome'), barra = document.getElementById('barra');
+  let atual = 0;
+  function mostrar(i, semAnim) {
+    i = Math.max(0, Math.min(telas.length - 1, i));
+    if (semAnim) document.body.classList.add('sem-anim');
+    telas.forEach((t, k) => t.classList.toggle('on', k === i));
+    atual = i;
+    idx.textContent = String(i + 1).padStart(2, '0');
+    nome.textContent = telas[i].dataset.nome;
+    barra.style.width = ((i + 1) / telas.length * 100) + '%';
+    document.querySelector('.dica').style.opacity = i === 0 ? 1 : 0;
+    if (window.innerWidth <= 820) window.scrollTo(0, 0);
+    if (semAnim) requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('sem-anim')));
+  }
+  const passo = d => mostrar(atual + d);
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); passo(1); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); passo(-1); }
+    else if (e.key === 'Home') mostrar(0);
+    else if (e.key === 'End') mostrar(telas.length - 1);
+  });
+  addEventListener('click', e => { if (window.innerWidth > 820) passo(e.clientX > innerWidth / 3 ? 1 : -1); });
+  let x0 = null;
+  addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) passo(dx < 0 ? 1 : -1); x0 = null; });
+  mostrar(0, true);
+  window.__site = { stops: telas.length, ready: true, go: i => mostrar(i, true), next: d => passo(d) };
+})();
+</script>
+</body>
+</html>
